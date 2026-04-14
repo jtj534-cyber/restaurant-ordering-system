@@ -1,0 +1,272 @@
+import json
+from datetime import datetime
+
+# This list stores all menu items available in the restaurant.
+# Each item is represented as a dictionary with id, name, and price.
+menu = [
+    {"id": 1, "name": "Burger", "price": 6.50},
+    {"id": 2, "name": "Pizza", "price": 8.00},
+    {"id": 3, "name": "Pasta", "price": 7.25},
+    {"id": 4, "name": "Fries", "price": 3.00},
+    {"id": 5, "name": "Drink", "price": 2.00}
+]
+
+# This list will store all items the user adds to their basket.
+basket = []
+
+
+def display_menu():
+    """Display all menu items to the user."""
+    print("\n--- MENU ---")
+    for item in menu:
+        # Print each item with its ID and price
+        print(f"{item['id']}. {item['name']} - £{item['price']:.2f}")
+
+
+def find_item_by_id(item_id):
+    """Search for a menu item using its ID and return it."""
+    for item in menu:
+        if item["id"] == item_id:
+            return item  # Return the item if found
+    return None  # Return None if not found
+
+
+def add_to_basket():
+    """Add an item to the basket or update its quantity if it already exists."""
+    try:
+        item_id = int(input("Enter item ID to add: "))
+        item = find_item_by_id(item_id)
+
+        if item is None:
+            print("Invalid item ID.")
+            return
+
+        quantity = int(input("Enter quantity: "))
+
+        if quantity <= 0:
+            print("Quantity must be greater than 0.")
+            return
+
+        # 🔥 THIS IS THE IMPORTANT PART
+        for basket_item in basket:
+            if basket_item["name"] == item["name"]:
+                basket_item["quantity"] += quantity
+                print(f"Updated quantity of {item['name']} to {basket_item['quantity']}.")
+                return  # VERY IMPORTANT
+
+        # If item not found in basket → add new
+        basket.append({
+            "name": item["name"],
+            "price": item["price"],
+            "quantity": quantity
+        })
+
+        print(f"{item['name']} added to basket.")
+
+    except ValueError:
+        print("Please enter valid numbers only.")
+
+def view_basket():
+    """Display all items in the basket and show cost summary."""
+    print("\n--- BASKET ---")
+
+    # Check if basket is empty
+    if not basket:
+        print("Your basket is empty.")
+        return
+
+    # Get subtotal, tax, and total from calculation function
+    subtotal, tax, total = calculate_total()
+
+    # Display each item with quantity and total price
+    for index, item in enumerate(basket, start=1):
+        item_total = item["price"] * item["quantity"]
+        print(f"{index}. {item['name']} x{item['quantity']} = £{item_total:.2f}")
+
+    # Display calculated values
+    print(f"Subtotal: £{subtotal:.2f}")
+    print(f"Tax (10%): £{tax:.2f}")
+    print(f"Total: £{total:.2f}")
+
+
+def remove_from_basket():
+    """Remove an item from the basket based on its position."""
+    view_basket()
+
+    # If basket is empty, stop
+    if not basket:
+        return
+
+    try:
+        # Ask the user which item to remove
+        item_number = int(input("Enter basket item number to remove: "))
+
+        # Validate the item number
+        if 1 <= item_number <= len(basket):
+            removed_item = basket.pop(item_number - 1)
+            print(f"{removed_item['name']} removed from basket.")
+        else:
+            print("Invalid basket number.")
+
+    except ValueError:
+        print("Please enter a valid number.")
+
+
+def calculate_total():
+    """Calculate subtotal, tax, and final total cost."""
+    subtotal = 0
+
+    # Loop through all basket items and calculate subtotal
+    for item in basket:
+        subtotal += item["price"] * item["quantity"]
+
+    # Apply tax (10%)
+    tax = subtotal * 0.10
+
+    # Final total = subtotal + tax
+    total = subtotal + tax
+
+    return subtotal, tax, total
+
+
+def sort_menu_by_price():
+    """Display menu items sorted by price from lowest to highest."""
+    # Sort the menu using a lambda function based on price
+    sorted_menu = sorted(menu, key=lambda item: item["price"])
+
+    print("\n--- MENU SORTED BY PRICE ---")
+    for item in sorted_menu:
+        print(f"{item['id']}. {item['name']} - £{item['price']:.2f}")
+
+
+def save_order(total_paid, change):
+    """Save the completed order into a file."""
+    subtotal, tax, total = calculate_total()
+
+    # Create a dictionary to store order details
+    order_data = {
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        "items": basket.copy(),  # Copy to avoid modification
+        "subtotal": subtotal,
+        "tax": tax,
+        "total": total,
+        "paid": total_paid,
+        "change": change
+    }
+
+    try:
+        # Save each order as a new line in the file
+        with open("orders.json", "a", encoding="utf-8") as file:
+            json.dump(order_data, file)
+            file.write("\n")
+    except Exception as error:
+        print("Error saving order:", error)
+
+
+def checkout():
+    """Process payment, save order, and clear basket."""
+    if not basket:
+        print("Basket is empty. Add items first.")
+        return
+
+    subtotal, tax, total = calculate_total()
+
+    # Display payment details
+    print(f"\nSubtotal: £{subtotal:.2f}")
+    print(f"Tax (10%): £{tax:.2f}")
+    print(f"Total: £{total:.2f}")
+
+    try:
+        # Get payment from user
+        payment = float(input("Enter payment amount: "))
+
+        # Check if payment is sufficient
+        if payment < total:
+            print("Not enough payment.")
+            return
+
+        # Calculate change
+        change = payment - total
+        print(f"Payment accepted. Change: £{change:.2f}")
+
+        # Save order and clear basket
+        save_order(payment, change)
+        basket.clear()
+
+        print("Order saved successfully.")
+
+    except ValueError:
+        print("Please enter a valid payment amount.")
+
+
+def daily_sales_report():
+    """Read saved orders and display total sales."""
+    try:
+        total_sales = 0
+        order_count = 0
+
+        # Open the file and read each order line
+        with open("orders.json", "r", encoding="utf-8") as file:
+            for line in file:
+                line = line.strip()
+
+                if not line:
+                    continue
+
+                try:
+                    # Convert JSON string to dictionary
+                    order = json.loads(line)
+                    total_sales += order["total"]
+                    order_count += 1
+                except json.JSONDecodeError:
+                    print("Warning: Skipped invalid record.")
+
+        print("\n--- DAILY SALES REPORT ---")
+        print(f"Orders today: {order_count}")
+        print(f"Total sales: £{total_sales:.2f}")
+
+    except FileNotFoundError:
+        print("No sales data found yet.")
+    except Exception as error:
+        print("Error reading sales report:", error)
+
+
+def main():
+    """Main program loop to handle user choices."""
+    while True:
+        print("\n=== RESTAURANT ORDERING SYSTEM ===")
+        print("1. Display menu")
+        print("2. Add to basket")
+        print("3. View basket")
+        print("4. Remove from basket")
+        print("5. Sort menu by price")
+        print("6. Checkout")
+        print("7. Daily sales report")
+        print("8. Exit")
+
+        choice = input("Choose an option: ")
+
+        # Call the correct function based on user choice
+        if choice == "1":
+            display_menu()
+        elif choice == "2":
+            add_to_basket()
+        elif choice == "3":
+            view_basket()
+        elif choice == "4":
+            remove_from_basket()
+        elif choice == "5":
+            sort_menu_by_price()
+        elif choice == "6":
+            checkout()
+        elif choice == "7":
+            daily_sales_report()
+        elif choice == "8":
+            print("Goodbye.")
+            break
+        else:
+            print("Invalid choice. Please try again.")
+
+
+# Start the program
+main()
