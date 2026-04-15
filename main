@@ -47,7 +47,7 @@ def add_to_basket():
             print("Quantity must be greater than 0.")
             return
 
-        # 🔥 THIS IS THE IMPORTANT PART
+        # THIS IS THE IMPORTANT PART
         for basket_item in basket:
             if basket_item["name"] == item["name"]:
                 basket_item["quantity"] += quantity
