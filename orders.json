@@ -1,5 +1,0 @@
-[
-{"date":"2026-04-19 12:20:39","items":[{"name":"Burger","price":6.5,"quantity":4}],"subtotal":26.0,"tax":2.6,"total":28.6,"paid":30.0,"change":1.4},
-{"date":"2026-04-19 12:20:57","items":[{"name":"Fries","price":3.0,"quantity":5}],"subtotal":15.0,"tax":1.5,"total":16.5,"paid":17.0,"change":0.5},
-{"date":"2026-04-19 12:21:09","items":[{"name":"Fries","price":3.0,"quantity":2}],"subtotal":6.0,"tax":0.6,"total":6.6,"paid":10.0,"change":3.4}
-]
